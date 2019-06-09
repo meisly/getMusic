@@ -9,6 +9,9 @@ mc = Mobileclient(debug_logging=False)
 def main():
     """"""
     #Options: Either run whole, or export songs from spotify or import songs to gplay
+    songs = getSongsFromSpotify()
+    importToGPlay(songsFromSpotify = songs)
+
 def getSongsFromSpotify():
     """Cycles through songs in a spotify library and creates a list of dictionaries where each dictionary represents a single song.
     For example:  
@@ -57,7 +60,7 @@ def getSongsFromSpotify():
 
     return songs
     
-def importToGPlay(input = None):
+def importToGPlay(input = None, songsFromSpotify = []):
 """Searches Google Play Music using the song data previously generated."""   
     deviceID = ''
     if deviceID == '':
@@ -78,16 +81,17 @@ def importToGPlay(input = None):
     else:
         print("You have logged in")
 
-    #gets spotify library data from file
-    with open("trackFile.json", "r") as songFile:
-        songs = json.load(songFile)
+    #checks to see if the function was passed a song dictionary. if not gets spotify library data from file
+    if songsFromSpotify = []:
+        with open("trackFile.json", "r") as songFile:
+            songsFromSpotify = json.load(songFile)
     #gets track info and searches google servers then compares to initial query. if it doesn't match the track is added to a fails file
     query = ""
     songIDs = []
     fails = []
     counter = 0
     total = 0
-    for track in songs:
+    for track in songsFromSpotify:
         title = track['title'].lower()
         artists = [artie.lower() for artie in track['artists']]
         query = title + " " + " ".join(artists)
@@ -120,6 +124,8 @@ def importToGPlay(input = None):
     
     mc.add_store_tracks(songIDs)       
     
+    #ask user if they want to include potential matches that failed earlier checks. If yes it will add these songs to playlists titled "Potential Matches #" where the # indicates the number of the playlist
+    # Due to a potential issue with playlist length playlists are capped at 500 songs
     addLoose = input("Would you like to add possible matches to playlists for later review (Y/N)?")
     if addLoose == 'Y':
         #get the store IDs of fails
@@ -135,7 +141,7 @@ def importToGPlay(input = None):
         playlistList = []
         for playCount in range(math.ceil(len(failIds)/500)):
             #create the right number of playlists
-            playlist = "Maybes_"+str(playCount)
+            playlist = "Potential_Matches_"+str(playCount)
             playlistList.append(playlist)
             mc.create_playlist(playlist)
             playCount +=1
@@ -145,7 +151,7 @@ def importToGPlay(input = None):
         offset = 0
         #add songs to the playlists created
         for plist in allPlaylists:
-            if "Maybes" not in plist['name']:
+            if "Potential_Matches" not in plist['name']:
                 continue
             playlist = plist['id']
             low = offset*501
@@ -157,6 +163,9 @@ def importToGPlay(input = None):
         continue
     else:
         print("Is it really that hard to enter Y or N?")
+
+if __name__ == "__main__":
+    main()
 
     
 
